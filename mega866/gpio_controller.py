@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 
 from enum import Enum
+from typing import Dict, List, Optional
+from otl866.bitbang import Bitbang # type: ignore
 
-TL866_LOWEST_PIN_NUMBER = 1
-TL866_HIGHEST_PIN_NUMBER = 40
+TL866_LOWEST_PIN_NUMBER: int = 1
+TL866_HIGHEST_PIN_NUMBER: int = 40
+
+MEGA866_HIGHEST_PIN_NUMBER: int = 160
+MEGA866_LOWEST_PIN_NUMBER: int = 1
 
 class Tl866Instance(Enum):
     WATER = 1 # J9
@@ -14,14 +19,13 @@ class Tl866Instance(Enum):
 class Tl866Pin:
     def __init__(self, instance: Tl866Instance, pin_on_tl866_instance: int):
         self.instance = instance
+        self.bitbanger = None
         if not pin_on_tl866_instance in range(TL866_LOWEST_PIN_NUMBER, TL866_HIGHEST_PIN_NUMBER + 1):
             raise Exception(f"pin number {pin_on_tl866_instance} out of range [{TL866_LOWEST_PIN_NUMBER}, {TL866_HIGHEST_PIN_NUMBER}]")
         else:
             self.pin = pin_on_tl866_instance
 
-pin2Tl866_map = dict[int, Tl866Pin]
-
-pin2Tl866_map = {
+pin2Tl866_map: Dict[int, Tl866Pin] = {
     51: Tl866Pin(Tl866Instance.EARTH, 1),
     55: Tl866Pin(Tl866Instance.EARTH, 2),
     1: Tl866Pin(Tl866Instance.EARTH, 3),
@@ -187,8 +191,54 @@ pin2Tl866_map = {
     98: Tl866Pin(Tl866Instance.WATER, 40),
 }
 
+class GpioController:
+    def __init__(self, water_serial_device: Optional[str] = None, earth_serial_device: Optional[str] = None, fire_serial_device: Optional[str] = None, wind_serial_device: Optional[str] = None) -> None:
+        self.bitbangers: List[Bitbang] = []
+        def add_device(self, device: Optional[str], instance: Tl866Instance):
+            if device is not None:
+                bb = Bitbang(device=device)
+                self.bitbangers.append(bb)
+                for value in pin2Tl866_map.values():
+                     if value.instance == instance:
+                        value.bitbanger = bb
+
+        add_device(self, water_serial_device, Tl866Instance.WATER)
+        add_device(self, earth_serial_device, Tl866Instance.EARTH)
+        add_device(self, fire_serial_device, Tl866Instance.FIRE)
+        add_device(self, wind_serial_device, Tl866Instance.WIND)
+
+    def __iter__(self):
+        return iter(self.bitbangers)
+
+    def vdd_en(self, enable: bool = True):
+        for controller in self:
+            controller.vdd_en()
+
+    def vdd_volt(self, val: int):
+        for controller in self:
+            controller.vdd_volt(val)
+
+    def vdd_pins(self, val: int):
+        pins_per_tl866 = {}
+        for controller in self:
+            pins_per_tl866[controller] = 0
+        for i in range(0, MEGA866_HIGHEST_PIN_NUMBER):
+            if val & (1 << i):
+                if (i + 1) not in pin2Tl866_map:
+                    raise Exception(f"Pin {i + 1} is not valid")
+                elif pin2Tl866_map[i + 1].bitbanger is None:
+                    raise Exception(f"device for pin {i + 1} not given")
+                else:
+                    pins_per_tl866[pin2Tl866_map[i + 1].bitbanger] |= (1 << pin2Tl866_map[i + 1].pin)
+        for controller, val in pins_per_tl866.items():
+            controller.vdd_pins(val)
+
 def main():
-    pass
+    controller = GpioController(water_serial_device="/dev/serial/by-id/usb-ProgHQ_Open-TL866_Programmer_BB7DE095C3656D924B371EC8-if00")
+
+    controller.vdd_volt(0)
+    controller.vdd_pins((1 << 99) | (1 << 41))
+    controller.vdd_en()
 
 if __name__ == '__main__':
     main()
