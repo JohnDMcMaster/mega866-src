@@ -2,7 +2,7 @@
 
 from enum import Enum
 from typing import Dict, Iterator, List, Optional
-from otl866.bitbang import Bitbang # type: ignore
+from otl866.bitbang import Bitbang  # type: ignore
 
 TL866_LOWEST_PIN_NUMBER: int = 1
 TL866_HIGHEST_PIN_NUMBER: int = 40
@@ -10,20 +10,27 @@ TL866_HIGHEST_PIN_NUMBER: int = 40
 MEGA866_HIGHEST_PIN_NUMBER: int = 160
 MEGA866_LOWEST_PIN_NUMBER: int = 1
 
+
 class Tl866Instance(Enum):
-    WATER = 1 # J9
-    EARTH = 2 # J3
-    FIRE = 3 # J5
-    WIND = 4 # J7
+    WATER = 1  # J9
+    EARTH = 2  # J3
+    FIRE = 3  # J5
+    WIND = 4  # J7
+
 
 class Tl866Pin:
     def __init__(self, instance: Tl866Instance, pin_on_tl866_instance: int):
         self.instance = instance
         self.bitbanger = None
-        if not pin_on_tl866_instance in range(TL866_LOWEST_PIN_NUMBER, TL866_HIGHEST_PIN_NUMBER + 1):
-            raise Exception(f"pin number {pin_on_tl866_instance} out of range [{TL866_LOWEST_PIN_NUMBER}, {TL866_HIGHEST_PIN_NUMBER}]")
+        if not pin_on_tl866_instance in range(
+            TL866_LOWEST_PIN_NUMBER, TL866_HIGHEST_PIN_NUMBER + 1
+        ):
+            raise Exception(
+                f"pin number {pin_on_tl866_instance} out of range [{TL866_LOWEST_PIN_NUMBER}, {TL866_HIGHEST_PIN_NUMBER}]"
+            )
         else:
             self.pin = pin_on_tl866_instance
+
 
 pin2Tl866_map: Dict[int, Tl866Pin] = {
     51: Tl866Pin(Tl866Instance.EARTH, 1),
@@ -66,7 +73,6 @@ pin2Tl866_map: Dict[int, Tl866Pin] = {
     57: Tl866Pin(Tl866Instance.EARTH, 38),
     53: Tl866Pin(Tl866Instance.EARTH, 39),
     49: Tl866Pin(Tl866Instance.EARTH, 40),
-
     97: Tl866Pin(Tl866Instance.WIND, 1),
     101: Tl866Pin(Tl866Instance.WIND, 2),
     105: Tl866Pin(Tl866Instance.WIND, 3),
@@ -107,7 +113,6 @@ pin2Tl866_map: Dict[int, Tl866Pin] = {
     107: Tl866Pin(Tl866Instance.WIND, 38),
     103: Tl866Pin(Tl866Instance.WIND, 39),
     99: Tl866Pin(Tl866Instance.WIND, 40),
-
     48: Tl866Pin(Tl866Instance.FIRE, 1),
     44: Tl866Pin(Tl866Instance.FIRE, 2),
     40: Tl866Pin(Tl866Instance.FIRE, 3),
@@ -148,7 +153,6 @@ pin2Tl866_map: Dict[int, Tl866Pin] = {
     38: Tl866Pin(Tl866Instance.FIRE, 38),
     42: Tl866Pin(Tl866Instance.FIRE, 39),
     46: Tl866Pin(Tl866Instance.FIRE, 40),
-
     158: Tl866Pin(Tl866Instance.WATER, 1),
     154: Tl866Pin(Tl866Instance.WATER, 2),
     96: Tl866Pin(Tl866Instance.WATER, 3),
@@ -191,15 +195,23 @@ pin2Tl866_map: Dict[int, Tl866Pin] = {
     160: Tl866Pin(Tl866Instance.WATER, 40),
 }
 
+
 class GpioController:
-    def __init__(self, water_serial_device: Optional[str] = None, earth_serial_device: Optional[str] = None, fire_serial_device: Optional[str] = None, wind_serial_device: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        water_serial_device: Optional[str] = None,
+        earth_serial_device: Optional[str] = None,
+        fire_serial_device: Optional[str] = None,
+        wind_serial_device: Optional[str] = None,
+    ) -> None:
         self.bitbangers: List[Bitbang] = []
+
         def add_device(self, device: Optional[str], instance: Tl866Instance):
             if device is not None:
                 bb = Bitbang(device=device)
                 self.bitbangers.append(bb)
                 for value in pin2Tl866_map.values():
-                     if value.instance == instance:
+                    if value.instance == instance:
                         value.bitbanger = bb
 
         add_device(self, water_serial_device, Tl866Instance.WATER)
@@ -221,7 +233,9 @@ class GpioController:
                 elif pin2Tl866_map[i + 1].bitbanger is None:
                     raise Exception(f"device for pin {i + 1} not given")
                 else:
-                    pins_per_tl866[pin2Tl866_map[i + 1].bitbanger] |= (1 << pin2Tl866_map[i + 1].pin - 1)
+                    pins_per_tl866[pin2Tl866_map[i + 1].bitbanger] |= (
+                        1 << pin2Tl866_map[i + 1].pin - 1
+                    )
         return pins_per_tl866
 
     def vdd_en(self, enable: bool = True) -> None:
@@ -256,8 +270,9 @@ class GpioController:
         for controller, val in self._get_pins_per_controller(val).items():
             controller.io_tri(val)
 
+
 def main() -> None:
-    '''
+    """
     This turns on 9.9v across pins 1 and 2 on a single controller
     controller = GpioController(earth_serial_device="/dev/serial/by-id/usb-ProgHQ_Open-TL866_Programmer_92DD659470E765C58847A4DA-if00")
     controller.vpp_pins((1 << 50))
@@ -265,8 +280,9 @@ def main() -> None:
     controller.vpp_en()
     controller.vdd_en()
     controller.gnd_pins((1 << 2))
-    '''
+    """
     pass
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
