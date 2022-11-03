@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Dict, Iterator, List, Optional
 from otl866.bitbang import Bitbang # type: ignore
 
 TL866_LOWEST_PIN_NUMBER: int = 1
@@ -207,18 +207,10 @@ class GpioController:
         add_device(self, fire_serial_device, Tl866Instance.FIRE)
         add_device(self, wind_serial_device, Tl866Instance.WIND)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Bitbang]:
         return iter(self.bitbangers)
 
-    def vdd_en(self, enable: bool = True):
-        for controller in self:
-            controller.vdd_en()
-
-    def vdd_volt(self, val: int):
-        for controller in self:
-            controller.vdd_volt(val)
-
-    def vdd_pins(self, val: int):
+    def _get_pins_per_controller(self, val: int) -> Dict[Bitbang, int]:
         pins_per_tl866 = {}
         for controller in self:
             pins_per_tl866[controller] = 0
@@ -229,16 +221,52 @@ class GpioController:
                 elif pin2Tl866_map[i + 1].bitbanger is None:
                     raise Exception(f"device for pin {i + 1} not given")
                 else:
-                    pins_per_tl866[pin2Tl866_map[i + 1].bitbanger] |= (1 << pin2Tl866_map[i + 1].pin)
-        for controller, val in pins_per_tl866.items():
+                    pins_per_tl866[pin2Tl866_map[i + 1].bitbanger] |= (1 << pin2Tl866_map[i + 1].pin - 1)
+        return pins_per_tl866
+
+    def vdd_en(self, enable: bool = True) -> None:
+        for controller in self:
+            controller.vdd_en()
+
+    def vdd_volt(self, val: int) -> None:
+        for controller in self:
+            controller.vdd_volt(val)
+
+    def vdd_pins(self, val: int) -> None:
+        for controller, val in self._get_pins_per_controller(val).items():
             controller.vdd_pins(val)
 
-def main():
-    controller = GpioController(water_serial_device="/dev/serial/by-id/usb-ProgHQ_Open-TL866_Programmer_BB7DE095C3656D924B371EC8-if00")
+    def vpp_en(self, enable: bool = True) -> None:
+        for controller in self:
+            controller.vpp_en()
 
-    controller.vdd_volt(0)
-    controller.vdd_pins((1 << 99) | (1 << 41))
+    def vpp_volt(self, val: int) -> None:
+        for controller in self:
+            controller.vpp_volt(val)
+
+    def vpp_pins(self, val: int) -> None:
+        for controller, val in self._get_pins_per_controller(val).items():
+            controller.vpp_pins(val)
+
+    def gnd_pins(self, val: int) -> None:
+        for controller, val in self._get_pins_per_controller(val).items():
+            controller.gnd_pins(val)
+
+    def io_tri(self, val: int = int("ff" * 5 * 4, base=16)):
+        for controller, val in self._get_pins_per_controller(val).items():
+            controller.io_tri(val)
+
+def main() -> None:
+    '''
+    This turns on 9.9v across pins 1 and 2 on a single controller
+    controller = GpioController(earth_serial_device="/dev/serial/by-id/usb-ProgHQ_Open-TL866_Programmer_92DD659470E765C58847A4DA-if00")
+    controller.vpp_pins((1 << 50))
+    controller.vpp_volt(0)
+    controller.vpp_en()
     controller.vdd_en()
+    controller.gnd_pins((1 << 2))
+    '''
+    pass
 
 if __name__ == '__main__':
     main()
