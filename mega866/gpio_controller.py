@@ -289,6 +289,19 @@ class GpioController:
         for controller, val in self._get_pins_per_controller(val).items():
             controller.io_tri(val)
 
+    def io_trir(self, val: int = int("ff" * 5 * 4, base=16)) -> int:
+        res = 0
+        for controller in self:
+            pins = controller.io_trir()
+            for i in range(0, TL866_HIGHEST_PIN_NUMBER):
+                if pins & (1 << i):
+                    res |= 1 << (controller.Tl866Pin2megaPin[i + 1] - 1)
+        return res
+
+    def io_w(self, val: int) -> None:
+        for controller, val in self._get_pins_per_controller(val).items():
+            controller.io_w(val)
+
     def io_r(self, val: int = int("ff" * 5 * 4, base=16)) -> int:
         res = 0
         for controller in self:
@@ -298,6 +311,11 @@ class GpioController:
                     res |= 1 << (controller.Tl866Pin2megaPin[i + 1] - 1)
         return res
 
+def debug_print_pins(pins: int):
+    for i in range(0, MEGA866_HIGHEST_PIN_NUMBER):
+        if pins & (1 << i):
+            print(f"{i + 1:2d} ", end="")
+    print()
 
 def main() -> None:
     """
@@ -310,7 +328,6 @@ def main() -> None:
     controller.gnd_pins((1 << 2))
     """
     pass
-
 
 if __name__ == "__main__":
     main()
