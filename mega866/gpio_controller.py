@@ -212,6 +212,23 @@ _add_mapping_entry(152, Tl866Instance.WATER, 38)
 _add_mapping_entry(156, Tl866Instance.WATER, 39)
 _add_mapping_entry(160, Tl866Instance.WATER, 40)
 
+all_earth_pins = []
+all_water_pins = []
+all_fire_pins = []
+all_wind_pins = []
+
+for k, v in pin2Tl866_map.items():
+    if v.instance == Tl866Instance.EARTH:
+        all_earth_pins.append(k)
+    elif v.instance == Tl866Instance.WATER:
+        all_water_pins.append(k)
+    elif v.instance == Tl866Instance.FIRE:
+        all_fire_pins.append(k)
+    elif v.instance == Tl866Instance.WIND:
+        all_wind_pins.append(k)
+    else:
+        raise Exception("WTF")
+
 
 class GpioController:
     def __init__(
@@ -311,11 +328,17 @@ class GpioController:
                     res |= 1 << (controller.Tl866Pin2megaPin[i + 1] - 1)
         return res
 
+    def init(self) -> None:
+        for controller in self:
+            controller.init()
+
+
 def debug_print_pins(pins: int):
     for i in range(0, MEGA866_HIGHEST_PIN_NUMBER):
         if pins & (1 << i):
             print(f"{i + 1:2d} ", end="")
     print()
+
 
 def main() -> None:
     """
@@ -328,6 +351,7 @@ def main() -> None:
     controller.gnd_pins((1 << 2))
     """
     pass
+
 
 if __name__ == "__main__":
     main()
