@@ -1,0 +1,2 @@
+prompt-toolkit>=3.0.32
+intelhex>=2.3.0
